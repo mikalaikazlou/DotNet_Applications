@@ -7,13 +7,16 @@ namespace GrabberSite
 {
     public class Grabber
     {
-        static string _siteUrl;
+        private static string _siteUrl;
+        private static bool _run;
+        private static bool _src;
         readonly static string _directoryPath = Directory.GetCurrentDirectory();
-        readonly static string _fileName = ConfigurationManager.AppSettings.Get(0);
+        readonly static string _fileName = ConfigurationManager.AppSettings["fileName"];
         readonly static string _fullPath = Path.Combine(_directoryPath, _fileName);
 
-        public static void SaveInformation(string _siteUrl, string _fullPath)
+        public static bool SaveInformation()
         {
+            bool _operationSave;
             using StreamWriter streamWriter = File.CreateText(_fullPath);
             {
                 try
@@ -23,33 +26,35 @@ namespace GrabberSite
                     streamWriter.WriteLine(webClient.DownloadString(_siteUrl));
                     webClient.Dispose();
                 }
-                catch (System.Exception ex)
+                catch (System.Exception)
                 {
-                    throw new System.Exception(ex.Message);
+                    return _operationSave = false;
                 }
                 finally
                 {
                     streamWriter.Close();
                 }
+
+                return _operationSave = true;
             }
         }
-        public static void GetParseSite(string[] args)
+        public static void GetParseSite(List<string> ts)
         {
-            for (int i = 0; i < args.Length; i++)
+            for (int i = 0; i < ts.Count; i++)
             {
-                if (Searcher.IsItAddressSite(args[i]))
+                if (Searcher.IsItAddressSite(ts[i]))
                 {
-                    _siteUrl = @"https:\\" + args[i];
+                    _siteUrl =  ts[i];
                 }
 
-                if (args[i].ToUpper() == "/SRC")
+                if (_src)
                 {
-                    SaveInformation(_siteUrl, _fullPath);
+                    SaveInformation();
                 }
 
-                if (args[i].ToUpper() == "/RUN")
+                if (_run)
                 {
-                    Browser.OpenBrowser(_siteUrl);
+                    Browser.OpenBrowser(_fullPath);
                 }
             }
         }
@@ -59,7 +64,18 @@ namespace GrabberSite
 
             for (int i = 0; i < _args.Length; i++)
             {
-                list.Add(_args[i]);
+                if (_args[i].ToUpper() == "/SRC")
+                {
+                    _src = true;
+                }
+                else if (_args[i].ToUpper() == "/RUN")
+                {
+                    _run = true;
+                }
+                else
+                {
+                    list.Add(_args[i]);
+                }
             }
 
             return list;
